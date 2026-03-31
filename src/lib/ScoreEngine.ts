@@ -49,17 +49,51 @@ export function getCreditLimit(score: number, avgIncome: number) {
 export function generateInsights(score: number, transactions: Transaction[]) {
   const insights = [];
   
-  if (score > 700) {
-    insights.push("Excellent repayment history and consistent income.");
+  // 1. Overall Score Insights
+  if (score > 750) {
+    insights.push("Exceptional profile. You qualify for our 'Gold' interest rates.");
+  } else if (score > 650) {
+    insights.push("Strong credit health. Maintaining this for 3 more months will unlock a higher limit.");
   } else if (score > 500) {
-    insights.push("Good potential. Increasing your M-Pesa savings could boost your score.");
+    insights.push("Good progress. Your consistent business income is your strongest asset.");
   } else {
-    insights.push("Consider paying utilities via M-Pesa regularly to build your profile.");
+    insights.push("Profile building phase. Focus on making all business payments via M-Pesa to increase visibility.");
   }
 
+  // 2. Savings Insights
+  const savingsCount = transactions.filter(t => t.category === 'Savings').length;
+  const totalSavings = transactions.filter(t => t.category === 'Savings').reduce((acc, t) => acc + t.amount, 0);
+  
+  if (savingsCount >= 3) {
+    insights.push(`Great savings habit! You've made ${savingsCount} deposits recently, showing high financial discipline.`);
+  } else if (savingsCount > 0) {
+    insights.push("Small savings detected. Try to automate a weekly deposit to M-Shwari to boost your score.");
+  } else {
+    insights.push("No savings history found. Even KES 50 a week helps prove your ability to set aside funds.");
+  }
+
+  // 3. Utility & Reliability Insights
   const utilityCount = transactions.filter(t => t.category === 'Utility').length;
-  if (utilityCount < 3) {
-    insights.push("Low utility payment history detected. Link your KPLC/Water bills.");
+  if (utilityCount >= 4) {
+    insights.push("Reliable utility payer. Your consistent KPLC/Water payments reduce your risk profile significantly.");
+  } else if (utilityCount < 2) {
+    insights.push("Limited utility history. Paying your shop's electricity or water via M-Pesa is the fastest way to grow your score.");
+  }
+
+  // 4. Business Growth Insights
+  const businessIncome = transactions.filter(t => t.type === 'IN' && t.category === 'Business');
+  const lastMonthIncome = businessIncome.filter(t => t.date.includes('2024-03')).reduce((acc, t) => acc + t.amount, 0);
+  const prevMonthIncome = businessIncome.filter(t => t.date.includes('2024-02')).reduce((acc, t) => acc + t.amount, 0);
+
+  if (lastMonthIncome > prevMonthIncome && prevMonthIncome > 0) {
+    const growth = ((lastMonthIncome - prevMonthIncome) / prevMonthIncome * 100).toFixed(0);
+    insights.push(`Business is growing! Your revenue increased by ${growth}% this month. This supports a limit increase.`);
+  }
+
+  // 5. Debt Management
+  const loanRepayments = transactions.filter(t => t.category === 'Loan Repayment').length;
+  if (loanRepayments > 0) {
+    insights.push("Active debt management detected. Timely Fuliza/M-Shwari repayments are being tracked positively.");
   }
 
   return insights;
